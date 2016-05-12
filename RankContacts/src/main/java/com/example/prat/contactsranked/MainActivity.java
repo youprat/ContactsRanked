@@ -17,6 +17,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,42 +38,70 @@ public class MainActivity extends AppCompatActivity {
 
     public static int page = 0;
     public static final int perPage = 20;
-    LinkedHashMap<String, Integer> contactsRanked = new LinkedHashMap();
+    LinkedHashMap<String, Integer> currentContacts = new LinkedHashMap();
     LinkedHashMap<String, Integer> contacts = new LinkedHashMap();
     HashMap<String, String> contactNames = new HashMap();
+
+    @TargetApi(23)
+    protected void modScrollView(){
+        final ScrollView scroller = (ScrollView) findViewById(R.id.scroller);
+        scroller.setOnScrollChangeListener(new View.OnScrollChangeListener() {
+
+            @Override
+            public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+                try {
+                    View list =  findViewById(R.id.container);
+                    int listBottom = list.getBottom();
+                    int scrollerHeight = scroller.getHeight();
+                    int diff = listBottom - ( scrollerHeight  + scrollY);
+
+                    if (diff <= 0) {
+                        // notify that we have reached the bottom
+                        addNextPage();
+                    }
+                } catch (Exception e){e.getCause();}
+            }
+        });
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        handlePermissions();
+            modScrollView();
+            handlePermissions();
+            //deleteAllContacts();
 
-        //deleteAllContacts();
+            if(null == (contacts = getContacts())) {
+                createContacts();
+                contacts = getContacts();
+            }
+            retrieveFromPersistantStorage();
 
-        if(null == (contacts = getContacts())) {
-            createContacts();
-            contacts = getContacts();
-        }
-        retrieveFromPersistantStorage();
-        updateView();
+            contacts = sortByValue(contacts);
+
+            for(int i=0; i<=page;i++) {
+                currentContacts.putAll(getNextNEntries(contacts, i, perPage));
+            }
+
+            updateView();
+
     }
 
     @Override
     protected void onStop(){
-        super.onStop();
-
         storeToPersistantStorage();
+        super.onStop();
     }
 
     protected void updateView(){
-        contacts = sortByValue(contacts);
-        contactsRanked = getNextNEntries(contacts,page,perPage);
-
         LinearLayout list = (LinearLayout) findViewById(R.id.container);
         list.removeAllViews();
 
-        for(Object key: contactsRanked.keySet()){
+        Toast.makeText(MainActivity.this.getBaseContext(),"Fetching contacts...",Toast.LENGTH_SHORT);
+
+        for(Object key: currentContacts.keySet()){
 
             TextView textView = new TextView(this);
             textView.setBackgroundResource(R.drawable.rect_style_blue);
@@ -81,11 +110,11 @@ public class MainActivity extends AppCompatActivity {
                     LinearLayout.LayoutParams.WRAP_CONTENT);
             lp.setMargins(10,10,10,10);
             textView.setLayoutParams(lp);
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 25);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 30);
 
             final String ID = (String) key;
             String name = contactNames.get(ID);
-            final int rank = contactsRanked.get(key);
+            final int rank = currentContacts.get(key);
             textView.append(name+" ("+rank+")");
             textView.setOnClickListener(new View.OnClickListener(){
                 @Override
@@ -100,10 +129,25 @@ public class MainActivity extends AppCompatActivity {
 
     protected void updateView(String ID, int rank){
         contacts.put(ID, rank+1);
+        contacts = sortByValue(contacts);
+
+        currentContacts.put(ID,rank+1);
+        currentContacts = sortByValue(currentContacts);
 
         Toast.makeText(getApplication().getBaseContext(), "Rank increased!", Toast.LENGTH_SHORT).show();
 
         updateView();
+    }
+
+    protected void addNextPage(){
+        LinkedHashMap nextPageContacts = getNextNEntries(contacts,++page,perPage);
+        if(nextPageContacts != null) {
+            currentContacts.putAll(nextPageContacts);
+            updateView();
+        } else {
+            page--;
+            Toast.makeText(MainActivity.this.getBaseContext(),"No more contacts!",Toast.LENGTH_SHORT);
+        }
     }
 
     protected LinkedHashMap getContacts(){
@@ -158,12 +202,18 @@ public class MainActivity extends AppCompatActivity {
         int i = 0;
         LinkedHashMap target = new LinkedHashMap();
         for (Map.Entry<String, Integer> entry: source.entrySet()) {
-            if(i < page*perPage) continue;
-            if (i >= perPage) break;
+            if(i < page*perPage){
+                i++;
+                continue;
+            }
+            if (i >= perPage*(page+1)) break;
 
             target.put(entry.getKey(), entry.getValue());
             i++;
         }
+
+        if(target.size()==0) return null;
+
         return target;
     }
 
@@ -171,7 +221,11 @@ public class MainActivity extends AppCompatActivity {
         String[] displayName = new String[]{"Harry","Hermione","Ron","Ginny","George",
                                             "Fred","Lily","James","Arthur","Molly",
                                             "Albus","Severus","Hagrid","Snowy","Dobby",
-                                            "Fleur","Luna", "Dudley","Petunia","Vernon"};
+                                            "Fleur","Luna", "Dudley","Petunia","Vernon",
+                                            "Bathsheda", "Ludo", "Bathilda", "Katie", "Cuthbert",
+                                            "Phineas","Regulus","Sirius","Amelia","Susan",
+                                            "Terry","Lavender","Millicent","Charity","Frank",
+                                            "Alecto","Amycus","Mary","Cho","Penelope",};
 
         String mobileNumber = "987654321";
 
