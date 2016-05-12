@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/ContactsRanked.iml" filepath="$PROJECT_DIR$/ContactsRanked.iml" />
+      <module fileurl="file://$PROJECT_DIR$/RankContacts/RankContacts.iml" filepath="$PROJECT_DIR$/RankContacts/RankContacts.iml" />
+      <module fileurl="file://$PROJECT_DIR$/contactsranked/app.iml" filepath="$PROJECT_DIR$/contactsranked/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/RankContacts/contactsranked.iml" filepath="$PROJECT_DIR$/RankContacts/contactsranked.iml" />
+    </modules>
+  </component>
+</project>
